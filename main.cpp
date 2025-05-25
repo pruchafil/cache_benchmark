@@ -22,6 +22,46 @@
 #define GET_STEAM std::cout
 #endif
 
+namespace storage_units {
+
+constexpr size_t exponent = 1024u;
+constexpr size_t byte = 1u;
+constexpr size_t kilobyte = 1u * exponent;
+constexpr size_t megabyte = kilobyte * exponent;
+
+static inline constexpr double
+bytes_to_megabytes(size_t Bytes) {
+    return bytes_to_kilobytes(Bytes) / exponent;
+}
+
+static inline constexpr double
+bytes_to_kilobytes(size_t Bytes) {
+    return static_cast<double>(Bytes) / exponent;
+}
+
+static inline constexpr size_t
+operator"" _MB(size_t MegaBytes) {
+    return MegaBytes * exponent * exponent;
+}
+
+static inline constexpr size_t
+operator"" _kB(size_t KiloBytes) {
+    return KiloBytes * exponent;
+}
+
+static inline constexpr size_t
+operator"" _B(size_t Bytes) {
+    return Bytes;
+}
+
+static inline constexpr size_t
+operator"" _b(size_t Bits) {
+    return Bits / 8u;
+}
+
+}
+
+
 class timer {
     typedef std::chrono::steady_clock type;
 
@@ -30,8 +70,13 @@ class timer {
 
 public:
 
-    timer(std::ostream& Str) : _MyStream(Str) { start_ = type::now(); }
-    ~timer() { OUT(std::chrono::duration_cast<std::chrono::microseconds>(get() - start_)); }
+    timer(std::ostream& Str) : _MyStream(Str) {
+        start_ = type::now();
+    }
+
+    ~timer() {
+        OUT(std::chrono::duration_cast<std::chrono::microseconds>(get() - start_));
+    }
 
 private:
 
@@ -51,7 +96,7 @@ void
 iteration_non_contiguous_memory();
 
 int32_t
-main(int32_t argc, char* argv[]) {
+main(int32_t Argc, char* Argv[]) {
     cache_misses_benchmark();
     iteration_contiguous_memory();
     iteration_non_contiguous_memory();
@@ -61,10 +106,12 @@ main(int32_t argc, char* argv[]) {
 
 void
 cache_misses_benchmark() {
+    using namespace storage_units;
+
     INIT("out_misses.txt");
 
-    constexpr size_t unit = 1024u;
-    constexpr size_t maxCache = static_cast<size_t>(8u * 1024u) * 1024u;
+    constexpr size_t unit = 1_kB;
+    constexpr size_t maxCache = 8_MB;
     constexpr size_t testCache = maxCache + unit * 10u;
     constexpr size_t accesses = 1'000'000u;
 
@@ -87,12 +134,12 @@ cache_misses_benchmark() {
 
         timer t(GET_STEAM);
 
-        for (size_t j = 0; j < accesses; ++j) {
+        for (size_t j{}; j < accesses; ++j) {
             sum += buffer[indexes[j]];
         }
 
-        OUT((i * sizeof(int32_t)) / 1024.0 / 1024.0);
-        OUT((i * sizeof(int32_t)) / 1024.0);
+        OUT(bytes_to_megabytes(i * sizeof(int32_t)));
+        OUT(bytes_to_kilobytes(i * sizeof(int32_t)));
         OUT(i * sizeof(int32_t));
 
         }
@@ -103,10 +150,12 @@ cache_misses_benchmark() {
 
 void
 iteration_contiguous_memory() {
+    using namespace storage_units;
+
     INIT("out_cont_mem.txt");
 
-    constexpr size_t start = 10u;
-    constexpr size_t unit = 10u;
+    constexpr size_t start = 10_B;
+    constexpr size_t unit = 10_B;
     constexpr size_t maxSteps = 50000u;
 
     std::mt19937 rng(42);
@@ -140,10 +189,12 @@ iteration_contiguous_memory() {
 
 void
 iteration_non_contiguous_memory() {
+    using namespace storage_units;
+
     INIT("out_non_cont_mem.txt");
 
-    constexpr size_t start = 10u;
-    constexpr size_t unit = 10u;
+    constexpr size_t start = 10_B;
+    constexpr size_t unit = 10_B;
     constexpr size_t maxSteps = 50000u;
 
     std::mt19937 rng(42);
